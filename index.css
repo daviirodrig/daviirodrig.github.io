@@ -3,12 +3,32 @@
   padding: 0px;
 }
 
-body, html {
+body,
+html {
   height: 100%;
+  background-color: brown;
+  overflow: hidden;
 }
 
 .bg {
-  background-color: brown;
-  background-image: url("https://cdn.betterttv.net/emote/604bc7d6306b602acc59bab0/3x.gif");
+  background-image: url("https://cdn.betterttv.net/emote/604bc7d6306b602acc59bab0/3x.gif"),
+    url("https://cdn.betterttv.net/emote/604bc7d6306b602acc59bab0/3x.gif"),
+    url("https://cdn.betterttv.net/emote/604bc7d6306b602acc59bab0/3x.gif");
+  background-position: 30%, center, 70%;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  transition: all 10s ease-in-out;
   height: 100%;
+}
+
+.bg:hover {
+  animation: rotate 5s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
