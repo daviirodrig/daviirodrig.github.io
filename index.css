@@ -16,19 +16,20 @@ html {
     url("https://cdn.betterttv.net/emote/604bc7d6306b602acc59bab0/3x.gif");
   background-position: 30%, center, 70%;
   background-repeat: no-repeat, no-repeat, no-repeat;
-  transition: all 10s ease-in-out;
   height: 100%;
 }
 
-.bg:hover {
-  animation: rotate 5s linear infinite;
+body:hover .bg {
+  animation: rotate 5s both infinite;
 }
 
 @keyframes rotate {
   from {
     transform: rotate(0deg);
+    transform: skew(0deg, 0deg);
   }
   to {
     transform: rotate(360deg);
+    transform: skew(360deg, 360deg);
   }
 }
