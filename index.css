@@ -64,3 +64,6 @@ ul {
 .service-down {
   opacity: 0.1;
 }
+.service-down > a {
+  pointer-events: none;
+}
