@@ -9,9 +9,9 @@ body,
 html {
   font-family: 'Tilt Warp', cursive;
   height: 100%;
-  background-color: brown;
+  background-color: rgb(54, 26, 106);
   overflow: hidden;
-  color: wheat;
+  color: #f5deb3;
 }
 
 body {
@@ -44,7 +44,7 @@ a {
 }
 
 a:hover {
-  text-shadow: 0 0 5px rgb(255, 8, 0), 0 0 5px red;
+  text-shadow: 0 0 5px rgb(85, 0, 255), 0 0 5px rgb(85, 0, 255);
 }
 
 ul {
@@ -81,4 +81,9 @@ footer>a>svg {
 }
 footer>a>svg:hover {
   filter: none;
+}
+
+#oneko {
+  z-index: 1;
+  cursor: grab;
 }
