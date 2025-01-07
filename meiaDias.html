@@ -1,27 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time Since April 27, 2024</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #282c34;
-            color: #61dafb;
-            font-family: Arial, sans-serif;
-            font-size: 3rem;
+            background-color: #9eb2d8;
+            color: #ffffff;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 5rem;
             text-align: center;
+            text-shadow: rgb(0, 0, 0) 2px 0px 0px, rgb(0, 0, 0) 1.75517px 0.958851px 0px, rgb(0, 0, 0) 1.0806px 1.68294px 0px, rgb(0, 0, 0) 0.141474px 1.99499px 0px, rgb(0, 0, 0) -0.832294px 1.81859px 0px, rgb(0, 0, 0) -1.60229px 1.19694px 0px, rgb(0, 0, 0) -1.97998px 0.28224px 0px, rgb(0, 0, 0) -1.87291px -0.701566px 0px, rgb(0, 0, 0) -1.30729px -1.5136px 0px, rgb(0, 0, 0) -0.421592px -1.95506px 0px, rgb(0, 0, 0) 0.567324px -1.91785px 0px, rgb(0, 0, 0) 1.41734px -1.41108px 0px, rgb(0, 0, 0) 1.92034px -0.558831px 0px;
         }
     </style>
 </head>
-<body>
-    <div id="time-display">Loading...</div>
 
+<body>
+    <div id="time-display"></div>
     <script>
         const startDate = new Date('2024-04-26T00:00:00-03:00');
 
@@ -35,11 +39,12 @@
             const seconds = Math.floor((diff / 1000) % 60);
 
             document.getElementById('time-display').textContent =
-                `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                `${days.toString().padStart(3, '0')}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
         }
 
         setInterval(updateElapsedTime, 1000);
         updateElapsedTime();
     </script>
 </body>
+
 </html>
