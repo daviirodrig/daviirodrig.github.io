@@ -14,20 +14,118 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #9eb2d8;
+            background-color: black;
             color: #ffffff;
             font-family: 'Roboto Mono', monospace;
             font-size: 5rem;
             text-align: center;
             text-shadow: rgb(0, 0, 0) 2px 0px 0px, rgb(0, 0, 0) 1.75517px 0.958851px 0px, rgb(0, 0, 0) 1.0806px 1.68294px 0px, rgb(0, 0, 0) 0.141474px 1.99499px 0px, rgb(0, 0, 0) -0.832294px 1.81859px 0px, rgb(0, 0, 0) -1.60229px 1.19694px 0px, rgb(0, 0, 0) -1.97998px 0.28224px 0px, rgb(0, 0, 0) -1.87291px -0.701566px 0px, rgb(0, 0, 0) -1.30729px -1.5136px 0px, rgb(0, 0, 0) -0.421592px -1.95506px 0px, rgb(0, 0, 0) 0.567324px -1.91785px 0px, rgb(0, 0, 0) 1.41734px -1.41108px 0px, rgb(0, 0, 0) 1.92034px -0.558831px 0px;
         }
+
+        .time-wrapper {
+            height: 5rem;
+            overflow: hidden;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .digit-column {
+            position: relative;
+            width: 3rem;
+            height: 5rem;
+            overflow: hidden;
+        }
+
+        .digit {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .separator {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 
 <body>
-    <div id="time-display"></div>
+    <div id="time-display" class="time-wrapper"></div>
     <script>
         const startDate = new Date('2024-04-26T00:00:00-03:00');
+
+        function createDigitColumn() {
+            const column = document.createElement('div');
+            column.className = 'digit-column';
+            for (let i = 0; i <= 9; i++) {
+                const digit = document.createElement('div');
+                digit.className = 'digit';
+                digit.textContent = i;
+                digit.style.transform = `translateY(${i * 100}%)`;
+                column.appendChild(digit);
+            }
+            return column;
+        }
+
+        function updateDigit(column, number) {
+            const digits = column.querySelectorAll('.digit');
+            digits.forEach((digit, index) => {
+                digit.style.transform = `translateY(${(index - number) * 100}%)`;
+            });
+        }
+
+        function createTimeDisplay() {
+            const display = document.getElementById('time-display');
+            display.innerHTML = '';
+
+            // Days (3 columns)
+            for (let i = 0; i < 3; i++) {
+                display.appendChild(createDigitColumn());
+            }
+
+            // Separator
+            const sep1 = document.createElement('div');
+            sep1.className = 'separator';
+            sep1.textContent = 'd ';
+            display.appendChild(sep1);
+
+            // Hours (2 columns)
+            for (let i = 0; i < 2; i++) {
+                display.appendChild(createDigitColumn());
+            }
+
+            // Separator
+            const sep2 = document.createElement('div');
+            sep2.className = 'separator';
+            sep2.textContent = 'h ';
+            display.appendChild(sep2);
+
+            // Minutes (2 columns)
+            for (let i = 0; i < 2; i++) {
+                display.appendChild(createDigitColumn());
+            }
+
+            // Separator
+            const sep3 = document.createElement('div');
+            sep3.className = 'separator';
+            sep3.textContent = 'm ';
+            display.appendChild(sep3);
+
+            // Seconds (2 columns)
+            for (let i = 0; i < 2; i++) {
+                display.appendChild(createDigitColumn());
+            }
+
+            // Separator
+            const sep4 = document.createElement('div');
+            sep4.className = 'separator';
+            sep4.textContent = 's';
+            display.appendChild(sep4);
+        }
 
         function updateElapsedTime() {
             const now = new Date();
@@ -38,10 +136,31 @@
             const minutes = Math.floor((diff / (1000 * 60)) % 60);
             const seconds = Math.floor((diff / 1000) % 60);
 
-            document.getElementById('time-display').textContent =
-                `${days.toString().padStart(3, '0')}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            const columns = document.querySelectorAll('.digit-column');
+            const daysStr = days.toString().padStart(3, '0');
+            const hoursStr = hours.toString().padStart(2, '0');
+            const minutesStr = minutes.toString().padStart(2, '0');
+            const secondsStr = seconds.toString().padStart(2, '0');
+
+            // Update days
+            updateDigit(columns[0], parseInt(daysStr[0]));
+            updateDigit(columns[1], parseInt(daysStr[1]));
+            updateDigit(columns[2], parseInt(daysStr[2]));
+
+            // Update hours
+            updateDigit(columns[3], parseInt(hoursStr[0]));
+            updateDigit(columns[4], parseInt(hoursStr[1]));
+
+            // Update minutes
+            updateDigit(columns[5], parseInt(minutesStr[0]));
+            updateDigit(columns[6], parseInt(minutesStr[1]));
+
+            // Update seconds
+            updateDigit(columns[7], parseInt(secondsStr[0]));
+            updateDigit(columns[8], parseInt(secondsStr[1]));
         }
 
+        createTimeDisplay();
         setInterval(updateElapsedTime, 1000);
         updateElapsedTime();
     </script>
