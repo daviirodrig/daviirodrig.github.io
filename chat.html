@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bolsonaro comer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Itim&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #11111b;
+            --panel-bg: #1d1d2a;
+            --text-color: #E0E0E6;
+            --border-color: #333344;
+            --input-bg: #11111b;
+            --accent-color: #fe3867;
+            --highlight-bg: rgba(254, 56, 103, 0.2);
+            --error-color: #fe3867;
+            --cancel-color: #fe3867;
+            --slider-track-color: #444444;
+            --placeholder-color: #666677;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: "Itim", cursive, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 18px; /* Aumentado para melhor legibilidade com a fonte Itim */
+        }
+
+        #app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 2rem;
+            box-sizing: border-box;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: var(--accent-color);
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        #editor {
+            flex-grow: 1;
+            background-color: var(--input-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: var(--text-color);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: border-color 0.3s;
+        }
+
+        #editor:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(254, 56, 103, 0.3);
+        }
+        
+        #editor:empty:before {
+            content: attr(placeholder);
+            color: var(--placeholder-color);
+            pointer-events: none;
+            display: block;
+        }
+
+        .completion-highlight {
+            background-color: var(--highlight-bg);
+            padding: 1px 0;
+            border-radius: 3px;
+        }
+
+        .error-highlight {
+            background-color: rgba(254, 56, 103, 0.15);
+            color: var(--error-color);
+            font-weight: bold;
+            padding: 6px 8px;
+            margin-top: 10px;
+            display: inline-block;
+            border-radius: 4px;
+            border-left: 3px solid var(--error-color);
+        }
+
+        .submit-bar {
+            padding-top: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .submit-bar button {
+            border: none;
+            border-radius: 6px;
+            padding: 0.8rem 1.5rem;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: "Itim", cursive, sans-serif;
+            transition: transform 0.1s ease, background-color 0.2s;
+        }
+
+        #submit-button {
+            background-color: var(--accent-color);
+            color: #FFFFFF;
+        }
+        
+        #submit-button:hover {
+            transform: scale(1.05);
+        }
+        
+        #submit-button:disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #cancel-button {
+            background-color: var(--cancel-color);
+            color: #FFFFFF;
+            display: none; /* Hidden by default */
+        }
+
+        #cancel-button:hover {
+            opacity: 0.9;
+        }
+
+        #loading-indicator {
+            margin-left: 1rem;
+            font-style: italic;
+            color: var(--accent-color);
+            display: none;
+        }
+
+
+        #settings-panel {
+            width: 350px;
+            min-width: 320px;
+            background-color: var(--panel-bg);
+            border-left: 2px solid var(--border-color);
+            padding: 1.5rem;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        #settings-panel h2 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .setting-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .setting-group input[type="text"],
+        .setting-group input[type="password"] {
+            width: 100%;
+            padding: 0.7rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            font-family: "Itim", cursive, sans-serif;
+        }
+
+        .slider-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider-group span {
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--slider-track-color);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div id="main-content">
+            <h1>bolsonaro comer</h1>
+            <div id="editor" contenteditable="true" spellcheck="false" placeholder="Digite seu prompt aqui..."></div>
+            <div class="submit-bar">
+                <button id="submit-button">Enviar</button>
+                <button id="cancel-button">Cancelar</button>
+                <div id="loading-indicator">Gerando...</div>
+            </div>
+        </div>
+        <div id="settings-panel">
+            <h2>Configurações</h2>
+            
+            <div class="setting-group">
+                <label for="apiKey">Chave da API (opcional)</label>
+                <input type="password" id="apiKey" placeholder="Insira se o servidor exigir">
+            </div>
+
+            <div class="setting-group">
+                <label for="apiUrl">URL da API</label>
+                <input type="text" id="apiUrl" value="http://localhost:1234/v1/completions">
+            </div>
+
+            <div class="setting-group">
+                <label for="modelName">Modelo</label>
+                <input type="text" id="modelName" value="mistral-7b-instruct-v0.1">
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 2rem 0;">
+
+            <div class="setting-group">
+                <div class="slider-group">
+                    <label for="temperature">Temperatura</label>
+                    <span id="temperature-value">0.7</span>
+                </div>
+                <input type="range" id="temperature" min="0" max="2" step="0.01" value="0.7">
+            </div>
+
+            <div class="setting-group">
+                <div class="slider-group">
+                    <label for="maxLength">Comprimento máximo</label>
+                    <span id="maxLength-value">256</span>
+                </div>
+                <input type="range" id="maxLength" min="1" max="4000" step="1" value="256">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const editor = document.getElementById('editor');
+        const submitButton = document.getElementById('submit-button');
+        const cancelButton = document.getElementById('cancel-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        
+        // Settings panel elements
+        const apiKeyInput = document.getElementById('apiKey');
+        const apiUrlInput = document.getElementById('apiUrl');
+        const modelNameInput = document.getElementById('modelName');
+        const temperatureInput = document.getElementById('temperature');
+        const temperatureValue = document.getElementById('temperature-value');
+        const maxLengthInput = document.getElementById('maxLength');
+        const maxLengthValue = document.getElementById('maxLength-value');
+
+        // --- State ---
+        let abortController = null;
+
+        /**
+         * Sets the cursor position to the end of the contenteditable div.
+         */
+        function moveCursorToEnd() {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            editor.focus();
+        }
+
+        /**
+         * Rebuilds the editor content from a string, preserving newlines.
+         */
+        function rebuildEditorContent(textContent) {
+            editor.innerHTML = '';
+            const lines = textContent.split('\n');
+            lines.forEach((line, index) => {
+                editor.appendChild(document.createTextNode(line));
+                if (index < lines.length - 1) {
+                    editor.appendChild(document.createElement('br'));
+                }
+            });
+        }
+
+        /**
+         * Handles the submission to the API with streaming.
+         */
+        async function handleSubmit() {
+            const promptText = editor.innerText;
+            if (!promptText) return;
+
+            abortController = new AbortController();
+            const apiKey = apiKeyInput.value.trim();
+            const headers = { 'Content-Type': 'application/json' };
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            submitButton.style.display = 'none';
+            cancelButton.style.display = 'inline-block';
+            loadingIndicator.style.display = 'block';
+            editor.contentEditable = false;
+
+            rebuildEditorContent(promptText);
+            const completionSpan = document.createElement('span');
+            completionSpan.className = 'completion-highlight';
+            editor.appendChild(completionSpan);
+            moveCursorToEnd();
+
+            try {
+                const response = await fetch(apiUrlInput.value.trim(), {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        model: modelNameInput.value.trim(),
+                        prompt: promptText,
+                        max_tokens: parseInt(maxLengthInput.value),
+                        temperature: parseFloat(temperatureInput.value),
+                        stream: true
+                    }),
+                    signal: abortController.signal
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || `HTTP error! Status: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.substring(6);
+                            if (dataStr === '[DONE]') {
+                                return;
+                            }
+                            try {
+                                const data = JSON.parse(dataStr);
+                                const token = data.choices[0].text || '';
+                                completionSpan.textContent += token;
+                                editor.scrollTop = editor.scrollHeight;
+                            } catch (e) {
+                                console.error('Erro ao processar dados do stream:', dataStr);
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Stream cancelado pelo usuário.');
+                    completionSpan.textContent += ' [Cancelado]';
+                } else {
+                    console.error("Erro na API:", error);
+                    rebuildEditorContent(promptText);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-highlight';
+                    errorDiv.textContent = `Erro na API: ${error.message}`;
+                    editor.appendChild(document.createElement('br'));
+                    editor.appendChild(errorDiv);
+                    moveCursorToEnd();
+                }
+            } finally {
+                submitButton.style.display = 'inline-block';
+                cancelButton.style.display = 'none';
+                loadingIndicator.style.display = 'none';
+                editor.contentEditable = true;
+                abortController = null;
+                moveCursorToEnd();
+            }
+        }
+
+        // --- Event Listeners ---
+        submitButton.addEventListener('click', handleSubmit);
+        
+        cancelButton.addEventListener('click', () => {
+            if (abortController) {
+                abortController.abort();
+            }
+        });
+        
+        temperatureInput.addEventListener('input', (e) => {
+            temperatureValue.textContent = e.target.value;
+        });
+
+        maxLengthInput.addEventListener('input', (e) => {
+            maxLengthValue.textContent = e.target.value;
+        });
+        
+        editor.focus();
+    </script>
+</body>
+</html>
