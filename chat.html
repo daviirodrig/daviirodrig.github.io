@@ -28,7 +28,7 @@
             font-family: "Itim", cursive, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-size: 18px; /* Aumentado para melhor legibilidade com a fonte Itim */
+            font-size: 18px;
         }
 
         #app-container {
@@ -138,7 +138,7 @@
         #cancel-button {
             background-color: var(--cancel-color);
             color: #FFFFFF;
-            display: none; /* Hidden by default */
+            display: none;
         }
 
         #cancel-button:hover {
@@ -288,7 +288,6 @@
         const cancelButton = document.getElementById('cancel-button');
         const loadingIndicator = document.getElementById('loading-indicator');
         
-        // Settings panel elements
         const apiKeyInput = document.getElementById('apiKey');
         const apiUrlInput = document.getElementById('apiUrl');
         const modelNameInput = document.getElementById('modelName');
@@ -300,9 +299,37 @@
         // --- State ---
         let abortController = null;
 
-        /**
-         * Sets the cursor position to the end of the contenteditable div.
-         */
+        // --- LocalStorage Functions ---
+        const LS_PREFIX = 'bolsonaroComer_';
+
+        function saveSetting(key, value) {
+            localStorage.setItem(LS_PREFIX + key, value);
+        }
+
+        function loadSettings() {
+            const savedApiKey = localStorage.getItem(LS_PREFIX + 'apiKey');
+            if (savedApiKey) apiKeyInput.value = savedApiKey;
+
+            const savedApiUrl = localStorage.getItem(LS_PREFIX + 'apiUrl');
+            if (savedApiUrl) apiUrlInput.value = savedApiUrl;
+
+            const savedModelName = localStorage.getItem(LS_PREFIX + 'modelName');
+            if (savedModelName) modelNameInput.value = savedModelName;
+
+            const savedTemp = localStorage.getItem(LS_PREFIX + 'temperature');
+            if (savedTemp) {
+                temperatureInput.value = savedTemp;
+                temperatureValue.textContent = savedTemp;
+            }
+
+            const savedMaxLength = localStorage.getItem(LS_PREFIX + 'maxLength');
+            if (savedMaxLength) {
+                maxLengthInput.value = savedMaxLength;
+                maxLengthValue.textContent = savedMaxLength;
+            }
+        }
+
+        // --- Core Functions ---
         function moveCursorToEnd() {
             const range = document.createRange();
             const sel = window.getSelection();
@@ -313,9 +340,6 @@
             editor.focus();
         }
 
-        /**
-         * Rebuilds the editor content from a string, preserving newlines.
-         */
         function rebuildEditorContent(textContent) {
             editor.innerHTML = '';
             const lines = textContent.split('\n');
@@ -327,9 +351,6 @@
             });
         }
 
-        /**
-         * Handles the submission to the API with streaming.
-         */
         async function handleSubmit() {
             const promptText = editor.innerText;
             if (!promptText) return;
@@ -384,9 +405,7 @@
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const dataStr = line.substring(6);
-                            if (dataStr === '[DONE]') {
-                                return;
-                            }
+                            if (dataStr === '[DONE]') return;
                             try {
                                 const data = JSON.parse(dataStr);
                                 const token = data.choices[0].text || '';
@@ -432,15 +451,27 @@
             }
         });
         
+        // Listeners to save settings to localStorage on change
+        apiKeyInput.addEventListener('input', () => saveSetting('apiKey', apiKeyInput.value));
+        apiUrlInput.addEventListener('input', () => saveSetting('apiUrl', apiUrlInput.value));
+        modelNameInput.addEventListener('input', () => saveSetting('modelName', modelNameInput.value));
+
         temperatureInput.addEventListener('input', (e) => {
             temperatureValue.textContent = e.target.value;
+            saveSetting('temperature', e.target.value);
         });
 
         maxLengthInput.addEventListener('input', (e) => {
             maxLengthValue.textContent = e.target.value;
+            saveSetting('maxLength', e.target.value);
         });
         
-        editor.focus();
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            editor.focus();
+        });
+
     </script>
 </body>
 </html>
