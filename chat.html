@@ -253,12 +253,12 @@
 
             <div class="setting-group">
                 <label for="apiUrl">URL da API</label>
-                <input type="text" id="apiUrl" value="http://localhost:1234/v1/completions">
+                <input type="text" id="apiUrl" value="https://api.openai.com/v1/completions">
             </div>
 
             <div class="setting-group">
                 <label for="modelName">Modelo</label>
-                <input type="text" id="modelName" value="mistral-7b-instruct-v0.1">
+                <input type="text" id="modelName" value="babbage-002">
             </div>
             
             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 2rem 0;">
@@ -451,7 +451,6 @@
             }
         });
         
-        // Listeners to save settings to localStorage on change
         apiKeyInput.addEventListener('input', () => saveSetting('apiKey', apiKeyInput.value));
         apiUrlInput.addEventListener('input', () => saveSetting('apiUrl', apiUrlInput.value));
         modelNameInput.addEventListener('input', () => saveSetting('modelName', modelNameInput.value));
@@ -466,7 +465,6 @@
             saveSetting('maxLength', e.target.value);
         });
         
-        // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
             loadSettings();
             editor.focus();
