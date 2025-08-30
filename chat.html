@@ -77,7 +77,7 @@
             border-color: var(--accent-color);
             box-shadow: 0 0 10px rgba(254, 56, 103, 0.3);
         }
-        
+
         #editor:empty:before {
             content: attr(placeholder);
             color: var(--placeholder-color);
@@ -123,11 +123,11 @@
             background-color: var(--accent-color);
             color: #FFFFFF;
         }
-        
+
         #submit-button:hover {
             transform: scale(1.05);
         }
-        
+
         #submit-button:disabled {
             background-color: #555;
             color: #888;
@@ -178,7 +178,7 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
-        
+
         .setting-group input[type="text"],
         .setting-group input[type="password"] {
             width: 100%;
@@ -211,7 +211,7 @@
             border-radius: 5px;
             outline: none;
         }
-        
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -229,6 +229,94 @@
             cursor: pointer;
             border-radius: 50%;
         }
+
+        /* Inline info icon button */
+        .info-icon {
+            margin-left: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            cursor: pointer;
+            vertical-align: middle;
+            transition: transform 0.1s ease, background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        .info-icon:hover {
+            transform: scale(1.05);
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #ffffff;
+        }
+
+        /* Modern dialog styling */
+        dialog#api-info-dialog {
+            width: min(90vw, 520px);
+            padding: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--panel-bg);
+            color: var(--text-color);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        dialog#api-info-dialog::backdrop {
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+        .dialog-content {
+            padding: 1.25rem 1.25rem 0.75rem 1.25rem;
+        }
+
+        .dialog-title {
+            margin: 0 0 0.5rem 0;
+            color: var(--accent-color);
+            font-size: 1.25rem;
+            letter-spacing: 0.3px;
+        }
+
+        .dialog-text {
+            margin: 0.5rem 0 0.75rem 0;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        .dialog-text a {
+            color: var(--accent-color);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--accent-color);
+        }
+
+        .dialog-text a:hover {
+            text-decoration: underline;
+        }
+
+        .dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem 1.25rem 1.25rem;
+        }
+
+        .dialog-actions .close-button {
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1.1rem;
+            background: var(--accent-color);
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: "Itim", cursive, sans-serif;
+        }
+
+        .dialog-actions .close-button:hover {
+            opacity: 0.95;
+        }
     </style>
 </head>
 <body>
@@ -245,9 +333,17 @@
         </div>
         <div id="settings-panel">
             <h2>Configurações</h2>
-            
+
             <div class="setting-group">
-                <label for="apiKey">Chave da API (opcional)</label>
+                <label for="apiKey">Chave da API (opcional)
+                    <button id="apiInfoBtn" type="button" class="info-icon" aria-label="Informações sobre a chave da API" title="Mais informações">
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                            <line x1="12" y1="10" x2="12" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+                            <circle cx="12" cy="7" r="1" fill="currentColor"></circle>
+                        </svg>
+                    </button>
+                </label>
                 <input type="password" id="apiKey" placeholder="Insira se o servidor exigir">
             </div>
 
@@ -260,7 +356,7 @@
                 <label for="modelName">Modelo</label>
                 <input type="text" id="modelName" value="babbage-002">
             </div>
-            
+
             <hr style="border: none; border-top: 1px solid var(--border-color); margin: 2rem 0;">
 
             <div class="setting-group">
@@ -281,13 +377,32 @@
         </div>
     </div>
 
+    <dialog id="api-info-dialog" aria-labelledby="api-info-title">
+        <div class="dialog-content">
+            <h3 id="api-info-title" class="dialog-title">Sobre a chave da API</h3>
+            <p class="dialog-text">
+                Essa interface utiliza a API da OpenAI. A “Chave da API” é a sua chave gerada da OpenAI, necessária para utilizar os modelos oficiais da OpenAI.
+            </p>
+            <p class="dialog-text">
+                Você pode criar e gerenciar essas chaves em:
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>.
+            </p>
+            <p class="dialog-text">
+                Você também pode utilizar outros servidores compatíveis com a API da OpenAI, alterando a URL da API.
+            </p>
+        </div>
+        <form method="dialog" class="dialog-actions">
+            <button class="close-button">Fechar</button>
+        </form>
+    </dialog>
+
     <script>
         // --- DOM Elements ---
         const editor = document.getElementById('editor');
         const submitButton = document.getElementById('submit-button');
         const cancelButton = document.getElementById('cancel-button');
         const loadingIndicator = document.getElementById('loading-indicator');
-        
+
         const apiKeyInput = document.getElementById('apiKey');
         const apiUrlInput = document.getElementById('apiUrl');
         const modelNameInput = document.getElementById('modelName');
@@ -295,6 +410,8 @@
         const temperatureValue = document.getElementById('temperature-value');
         const maxLengthInput = document.getElementById('maxLength');
         const maxLengthValue = document.getElementById('maxLength-value');
+        const apiInfoBtn = document.getElementById('apiInfoBtn');
+        const apiInfoDialog = document.getElementById('api-info-dialog');
 
         // --- State ---
         let abortController = null;
@@ -444,13 +561,13 @@
 
         // --- Event Listeners ---
         submitButton.addEventListener('click', handleSubmit);
-        
+
         cancelButton.addEventListener('click', () => {
             if (abortController) {
                 abortController.abort();
             }
         });
-        
+
         apiKeyInput.addEventListener('input', () => saveSetting('apiKey', apiKeyInput.value));
         apiUrlInput.addEventListener('input', () => saveSetting('apiUrl', apiUrlInput.value));
         modelNameInput.addEventListener('input', () => saveSetting('modelName', modelNameInput.value));
@@ -464,11 +581,29 @@
             maxLengthValue.textContent = e.target.value;
             saveSetting('maxLength', e.target.value);
         });
-        
+
         document.addEventListener('DOMContentLoaded', () => {
             loadSettings();
             editor.focus();
         });
+
+        // --- Info dialog wiring ---
+        if (apiInfoBtn && apiInfoDialog) {
+            apiInfoBtn.addEventListener('click', () => {
+                if (typeof apiInfoDialog.showModal === 'function') {
+                    apiInfoDialog.showModal();
+                } else {
+                    // Fallback if dialog isn't supported
+                    window.open('https://platform.openai.com/api-keys', '_blank', 'noopener');
+                }
+            });
+            // Close when clicking on the backdrop
+            apiInfoDialog.addEventListener('click', (e) => {
+                if (e.target === apiInfoDialog) {
+                    apiInfoDialog.close();
+                }
+            });
+        }
 
     </script>
 </body>
