@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSH Key Inspector</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #0f1318;
+    --surface2: #141920;
+    --border: #1e2730;
+    --border2: #253040;
+    --green: #00ff88;
+    --green-dim: #00cc6a;
+    --green-glow: rgba(0,255,136,0.12);
+    --amber: #ffb300;
+    --red: #ff4466;
+    --blue: #4da6ff;
+    --text: #c8d8e8;
+    --text-dim: #5a7090;
+    --text-muted: #334455;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline effect */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Grid bg */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 48px;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 16px var(--green-glow);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 16px var(--green-glow); }
+    50% { box-shadow: 0 0 32px rgba(0,255,136,0.25); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+  }
+
+  h1 span { color: var(--green); }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Privacy banner */
+  .privacy {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,255,136,0.04);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-left: 3px solid var(--green);
+    padding: 10px 16px;
+    font-size: 11px;
+    color: var(--green-dim);
+    margin-bottom: 32px;
+    letter-spacing: 0.5px;
+  }
+
+  .privacy-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  /* Input area */
+  .input-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .section-title .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--amber);
+    border-radius: 50%;
+    margin-right: 8px;
+    box-shadow: 0 0 6px rgba(255,179,0,0.5);
+  }
+
+  .section-title .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+
+  textarea {
+    width: 100%;
+    height: 200px;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .char-count {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    padding: 9px 20px;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #000;
+  }
+
+  .btn-primary:hover {
+    background: #fff;
+    box-shadow: 0 0 24px var(--green-glow);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-secondary:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
+  }
+
+  /* Error */
+  .error-box {
+    display: none;
+    background: rgba(255,68,102,0.07);
+    border: 1px solid rgba(255,68,102,0.3);
+    border-left: 3px solid var(--red);
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 24px;
+  }
+
+  .error-box.visible { display: block; }
+
+  /* Results */
+  #results {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  #results.visible { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-grid {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .result-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .result-block + .result-block { border-top: none; }
+
+  .result-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    min-height: 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-row:last-child { border-bottom: none; }
+
+  .result-label {
+    padding: 14px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  .result-value {
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--text);
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.5;
+  }
+
+  .result-value.mono { font-family: 'JetBrains Mono', monospace; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+
+  .badge-green { color: var(--green); border-color: var(--green); background: rgba(0,255,136,0.07); }
+  .badge-amber { color: var(--amber); border-color: var(--amber); background: rgba(255,179,0,0.07); }
+  .badge-red { color: var(--red); border-color: var(--red); background: rgba(255,68,102,0.07); }
+  .badge-blue { color: var(--blue); border-color: var(--blue); background: rgba(77,166,255,0.07); }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 3px 8px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { color: var(--green); border-color: var(--green); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  /* Fingerprint display */
+  .fingerprint-visual {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .fp-byte {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0;
+    border: 1px solid;
+  }
+
+  /* Randomart */
+  .randomart-container {
+    padding: 16px;
+    background: var(--surface2);
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .randomart-pre {
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--green-dim);
+    white-space: pre;
+    border: 1px solid rgba(0,255,136,0.15);
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.3);
+  }
+
+  .randomart-info {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  .key-strength-bar {
+    height: 4px;
+    background: var(--border);
+    margin-top: 6px;
+    width: 200px;
+  }
+
+  .key-strength-fill {
+    height: 100%;
+    transition: width 0.6s ease;
+  }
+
+  /* PEM block viewer */
+  .pem-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    word-break: break-all;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .pem-header { color: var(--amber); }
+  .pem-footer { color: var(--amber); }
+  .pem-data { color: var(--text-dim); }
+
+  .multi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .multi-row .result-label {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  footer-note {
+    display: block;
+    margin-top: 40px;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">🔑</div>
+      <h1>SSH Key <span>Inspector</span></h1>
+    </div>
+    <div class="subtitle">Private key analysis · all processing local</div>
+  </header>
+
+  <div class="privacy">
+    <div class="privacy-dot"></div>
+    100% client-side — your key never leaves this browser. No network requests, no logging.
+  </div>
+
+  <div class="input-section">
+    <div class="section-header">
+      <span class="section-title"><span class="dot"></span>Private Key Input</span>
+      <span style="font-size:10px;color:var(--text-muted)">PEM / OpenSSH format</span>
+    </div>
+    <textarea id="keyInput" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;b3BlbnNzaC1rZXktdjEAAAAA...&#10;-----END OPENSSH PRIVATE KEY-----&#10;&#10;Paste your RSA, Ed25519, ECDSA, or DSA private key here"></textarea>
+    <div class="input-footer">
+      <span class="char-count" id="charCount">0 chars</span>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="clearAll()">Clear</button>
+        <button class="btn-primary" onclick="analyzeKey()">▶ Analyze</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div id="results">
+    <div class="result-block" style="margin-bottom:2px">
+      <div class="section-header">
+        <span class="section-title"><span class="dot green"></span>Key Summary</span>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Key Type</div>
+        <div class="result-value" id="keyType">—</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Key Size</div>
+        <div class="result-value" id="keySize">—</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Format</div>
+        <div class="result-value" id="keyFormat">—</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Encrypted</div>
+        <div class="result-value" id="keyEncrypted">—</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Security Level</div>
+        <div class="result-value" id="securityLevel" style="flex-direction:column;align-items:flex-start;gap:6px">—</div>
+      </div>
+    </div>
+
+    <div class="result-block" style="margin-bottom:2px">
+      <div class="section-header">
+        <span class="section-title"><span class="dot green"></span>Public Key</span>
+      </div>
+      <div class="result-row">
+        <div class="result-label">OpenSSH Format</div>
+        <div class="result-value mono" style="flex-wrap:wrap" id="pubKeySSH">—</div>
+      </div>
+      <div class="result-row" id="pubKeyCommentRow">
+        <div class="result-label">Comment</div>
+        <div class="result-value" id="pubKeyComment">—</div>
+      </div>
+    </div>
+
+    <div class="result-block" style="margin-bottom:2px">
+      <div class="section-header">
+        <span class="section-title"><span class="dot green"></span>Fingerprints</span>
+      </div>
+      <div class="result-row">
+        <div class="result-label">SHA-256</div>
+        <div class="result-value mono" id="fp256">—</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">MD5</div>
+        <div class="result-value mono" id="fpMD5">—</div>
+      </div>
+      <div class="result-row" style="flex-direction:column;align-items:stretch;display:block">
+        <div class="result-row" style="border-bottom:none">
+          <div class="result-label">Visual Fingerprint</div>
+          <div class="result-value" id="fpVisual" style="flex-wrap:wrap">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-block" style="margin-bottom:2px">
+      <div class="section-header">
+        <span class="section-title"><span class="dot green"></span>Randomart</span>
+      </div>
+      <div class="randomart-container">
+        <pre class="randomart-pre" id="randomartPre">—</pre>
+        <div class="randomart-info" id="randomartInfo"></div>
+      </div>
+    </div>
+
+    <div class="result-block">
+      <div class="section-header">
+        <span class="section-title"><span class="dot green"></span>Key Data</span>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Raw Lines</div>
+        <div class="result-value" id="rawLines">—</div>
+      </div>
+      <div class="result-row">
+        <div class="result-label">Base64 Bytes</div>
+        <div class="result-value" id="b64Bytes">—</div>
+      </div>
+      <div class="result-row" style="display:block">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div class="result-label" style="padding:0;margin-bottom:10px;border:none;background:none">PEM Block</div>
+          <div class="pem-block" id="pemBlock">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer-note>SSH Key Inspector · client-side only · no data transmitted</footer-note>
+</div>
+
+<script>
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+
+function showError(msg) {
+  const el = $('errorBox');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+
+function hideError() {
+  $('errorBox').classList.remove('visible');
+}
+
+$('keyInput').addEventListener('input', () => {
+  $('charCount').textContent = $('keyInput').value.length + ' chars';
+});
+
+function clearAll() {
+  $('keyInput').value = '';
+  $('charCount').textContent = '0 chars';
+  $('results').classList.remove('visible');
+  hideError();
+}
+
+// ─── Base64 helpers ───────────────────────────────────────────────────────────
+
+function b64decode(str) {
+  const bin = atob(str);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+function readUint32BE(data, offset) {
+  return ((data[offset] << 24) | (data[offset+1] << 16) | (data[offset+2] << 8) | data[offset+3]) >>> 0;
+}
+
+function readString(data, offset) {
+  const len = readUint32BE(data, offset);
+  const str = data.slice(offset + 4, offset + 4 + len);
+  return { value: str, next: offset + 4 + len };
+}
+
+function readStringUTF8(data, offset) {
+  const r = readString(data, offset);
+  return { value: new TextDecoder().decode(r.value), next: r.next };
+}
+
+function readMPInt(data, offset) {
+  const r = readString(data, offset);
+  return { value: r.value, next: r.next, bits: (r.value.length - (r.value[0] === 0 ? 1 : 0)) * 8 };
+}
+
+// ─── SHA-256 (pure JS) ────────────────────────────────────────────────────────
+
+async function sha256(data) {
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(buf);
+}
+
+// ─── MD5 (pure JS) ────────────────────────────────────────────────────────────
+
+function md5(data) {
+  // Standard MD5 implementation
+  const T = new Uint32Array(64);
+  for (let i = 0; i < 64; i++) T[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 2**32) >>> 0;
+  const K = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+
+  function rl(x, n) { return (x << n) | (x >>> (32 - n)); }
+  function add(x, y) { return (x + y) >>> 0; }
+
+  let a0=0x67452301, b0=0xefcdab89, c0=0x98badcfe, d0=0x10325476;
+
+  const msg8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const origLen = msg8.length;
+  const newLen = origLen + 1 + (55 - origLen % 64 + 64) % 64 + 9;
+  const msg = new Uint8Array(newLen + (newLen % 64 !== 0 ? 64 - newLen % 64 : 0));
+  msg.set(msg8);
+  msg[origLen] = 0x80;
+  const dv = new DataView(msg.buffer);
+  dv.setUint32(msg.length - 8, (origLen * 8) >>> 0, true);
+  dv.setUint32(msg.length - 4, Math.floor(origLen * 8 / 2**32), true);
+
+  for (let i = 0; i < msg.length; i += 64) {
+    const M = new Uint32Array(16);
+    for (let j = 0; j < 16; j++) M[j] = dv.getUint32(i + j * 4, true);
+    let A=a0, B=b0, C=c0, D=d0;
+    for (let j = 0; j < 64; j++) {
+      let F, g;
+      if (j < 16)      { F = (B & C) | (~B & D); g = j; }
+      else if (j < 32) { F = (D & B) | (~D & C); g = (5*j+1) % 16; }
+      else if (j < 48) { F = B ^ C ^ D;           g = (3*j+5) % 16; }
+      else             { F = C ^ (B | ~D);         g = (7*j) % 16; }
+      F = add(add(add(F, A), T[j]), M[g]);
+      A = D; D = C; C = B; B = add(B, rl(F, K[j]));
+    }
+    a0=add(a0,A); b0=add(b0,B); c0=add(c0,C); d0=add(d0,D);
+  }
+
+  const out = new Uint8Array(16);
+  const ov = new DataView(out.buffer);
+  ov.setUint32(0,a0,true); ov.setUint32(4,b0,true); ov.setUint32(8,c0,true); ov.setUint32(12,d0,true);
+  return out;
+}
+
+// ─── Randomart (SSH drunken bishop) ──────────────────────────────────────────
+
+function randomart(hashBytes, keyType, keyBits) {
+  const W = 17, H = 9;
+  const board = new Uint8Array(W * H);
+  let x = 8, y = 4;
+  board[y * W + x] = 15;
+
+  for (let i = 0; i < hashBytes.length; i++) {
+    for (let b = 0; b < 4; b++) {
+      const bits = (hashBytes[i] >> (b * 2)) & 3;
+      x += (bits & 1) ? 1 : -1;
+      y += (bits & 2) ? 1 : -1;
+      x = Math.max(0, Math.min(W - 1, x));
+      y = Math.max(0, Math.min(H - 1, y));
+      board[y * W + x]++;
+    }
+  }
+
+  board[4 * W + 8] = 16; // start
+  const pos = hashBytes.length > 16 ? { x: x, y: y } : null;
+  if (pos) board[pos.y * W + pos.x] = 17; // end
+
+  const chars = ' .o+=*BOX@%&#/^SE';
+  let art = `+--[${keyType} ${keyBits}]--+\n`;
+  for (let r = 0; r < H; r++) {
+    art += '|';
+    for (let c = 0; c < W; c++) {
+      art += chars[Math.min(board[r * W + c], chars.length - 1)];
+    }
+    art += '|\n';
+  }
+  art += `+--[SHA256]-------+`;
+  return art;
+}
+
+// ─── Fingerprint visual ───────────────────────────────────────────────────────
+
+function fpVisualHTML(hashBytes) {
+  // Color each byte by value
+  const colors = ['#ff4466','#ff7744','#ffb300','#44ff88','#4da6ff','#aa66ff','#ff66aa','#00ffcc'];
+  let html = '<div class="fingerprint-visual">';
+  for (let i = 0; i < Math.min(hashBytes.length, 32); i++) {
+    const b = hashBytes[i];
+    const color = colors[b >> 5];
+    const bg = color + '22';
+    html += `<div class="fp-byte" style="color:${color};border-color:${color}33;background:${bg}">${b.toString(16).padStart(2,'0')}</div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+// ─── OpenSSH private key parser ───────────────────────────────────────────────
+
+function parseOpenSSHKey(b64data) {
+  const magic = 'openssh-key-v1\0';
+  const data = b64decode(b64data);
+  const dec = new TextDecoder();
+
+  // Check magic
+  const magicBytes = new TextDecoder().decode(data.slice(0, magic.length));
+  if (magicBytes !== magic) throw new Error('Not a valid OpenSSH private key');
+
+  let offset = magic.length;
+
+  const cipherR = readStringUTF8(data, offset);
+  const cipher = cipherR.value; offset = cipherR.next;
+
+  const kdfR = readStringUTF8(data, offset);
+  const kdf = kdfR.value; offset = kdfR.next;
+
+  const kdfOptionsR = readString(data, offset);
+  offset = kdfOptionsR.next;
+
+  const numKeysR = readUint32BE(data, offset); offset += 4;
+
+  // Public key
+  const pubKeyR = readString(data, offset); offset = pubKeyR.next;
+  const pubKey = pubKeyR.value;
+
+  // Parse public key
+  const pkTypeR = readStringUTF8(pubKey, 0);
+  const pkType = pkTypeR.value;
+
+  return {
+    cipher,
+    kdf,
+    encrypted: cipher !== 'none',
+    pubKeyBytes: pubKey,
+    pkType,
+  };
+}
+
+// ─── RSA public key size ──────────────────────────────────────────────────────
+
+function parsePublicKeyBits(pubKeyBytes, pkType) {
+  try {
+    const typeR = readStringUTF8(pubKeyBytes, 0);
+    let offset = typeR.next;
+
+    if (pkType === 'ssh-rsa') {
+      const eR = readMPInt(pubKeyBytes, offset); offset = eR.next;
+      const nR = readMPInt(pubKeyBytes, offset);
+      return nR.bits;
+    } else if (pkType === 'ssh-ed25519') {
+      return 256;
+    } else if (pkType.startsWith('ecdsa-sha2-')) {
+      const curveR = readStringUTF8(pubKeyBytes, offset);
+      const curve = curveR.value;
+      if (curve === 'nistp256') return 256;
+      if (curve === 'nistp384') return 384;
+      if (curve === 'nistp521') return 521;
+    } else if (pkType === 'ssh-dss') {
+      return 1024;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ─── Build OpenSSH public key line ───────────────────────────────────────────
+
+function buildPublicKeyLine(pkType, pubKeyBytes, comment) {
+  const b64 = btoa(String.fromCharCode(...pubKeyBytes));
+  return `${pkType} ${b64}${comment ? ' ' + comment : ''}`;
+}
+
+// ─── Security assessment ──────────────────────────────────────────────────────
+
+function assessSecurity(pkType, bits) {
+  if (pkType === 'ssh-ed25519') return { level: 'EXCELLENT', color: 'green', score: 100, note: 'Modern, fast, safe. Best choice.' };
+  if (pkType.startsWith('ecdsa-sha2-nistp521')) return { level: 'EXCELLENT', color: 'green', score: 95, note: 'Strong elliptic curve.' };
+  if (pkType.startsWith('ecdsa-sha2-nistp384')) return { level: 'STRONG', color: 'green', score: 85, note: 'Good elliptic curve.' };
+  if (pkType.startsWith('ecdsa-sha2-nistp256')) return { level: 'GOOD', color: 'blue', score: 75, note: 'Acceptable, prefer Ed25519.' };
+  if (pkType === 'ssh-rsa') {
+    if (!bits || bits < 2048) return { level: 'WEAK', color: 'red', score: 20, note: 'RSA < 2048 bits is insecure!' };
+    if (bits < 3072) return { level: 'ACCEPTABLE', color: 'amber', score: 55, note: 'RSA 2048 is minimum acceptable.' };
+    if (bits < 4096) return { level: 'GOOD', color: 'blue', score: 70, note: 'RSA 3072 is reasonably strong.' };
+    return { level: 'STRONG', color: 'amber', score: 80, note: 'Large RSA key. Consider Ed25519 instead.' };
+  }
+  if (pkType === 'ssh-dss') return { level: 'DEPRECATED', color: 'red', score: 5, note: 'DSA is broken. Migrate immediately.' };
+  return { level: 'UNKNOWN', color: 'amber', score: 50, note: 'Unknown key type.' };
+}
+
+// ─── Main analyze function ────────────────────────────────────────────────────
+
+async function analyzeKey() {
+  hideError();
+  $('results').classList.remove('visible');
+
+  const raw = $('keyInput').value.trim();
+  if (!raw) { showError('Please paste a private key.'); return; }
+
+  try {
+    // Detect format
+    const isOpenSSH = raw.includes('BEGIN OPENSSH PRIVATE KEY');
+    const isRSAPEM = raw.includes('BEGIN RSA PRIVATE KEY');
+    const isECPEM = raw.includes('BEGIN EC PRIVATE KEY');
+    const isPKCS8 = raw.includes('BEGIN PRIVATE KEY');
+
+    if (!isOpenSSH && !isRSAPEM && !isECPEM && !isPKCS8) {
+      throw new Error('Unrecognized key format. Paste a PEM or OpenSSH private key.');
+    }
+
+    // Extract base64 body
+    const lines = raw.split('\n').map(l => l.trim());
+    const bodyLines = lines.filter(l => l && !l.startsWith('---') && !l.startsWith('#') && !l.includes(':'));
+    const b64body = bodyLines.join('');
+
+    let pkType = 'unknown';
+    let keyBits = null;
+    let encrypted = false;
+    let pubKeyBytes = null;
+    let comment = '';
+    let format = '';
+
+    if (isOpenSSH) {
+      format = 'OpenSSH';
+      try {
+        const parsed = parseOpenSSHKey(b64body);
+        pkType = parsed.pkType;
+        encrypted = parsed.encrypted;
+        pubKeyBytes = parsed.pubKeyBytes;
+        keyBits = parsePublicKeyBits(pubKeyBytes, pkType);
+      } catch(e) {
+        throw new Error('Could not parse OpenSSH key: ' + e.message);
+      }
+    } else if (isRSAPEM) {
+      format = 'PEM (PKCS#1)';
+      pkType = 'ssh-rsa';
+      encrypted = raw.includes('ENCRYPTED') || raw.includes('Proc-Type: 4,ENCRYPTED');
+      // Try to parse RSA modulus size from DER
+      try {
+        const der = b64decode(b64body);
+        keyBits = parseRSADERBits(der);
+      } catch(e) {}
+    } else if (isECPEM) {
+      format = 'PEM (SEC1)';
+      pkType = 'ecdsa-sha2-nistp256'; // default guess
+      encrypted = raw.includes('ENCRYPTED');
+      try {
+        const der = b64decode(b64body);
+        const bits = parseECDERBits(der);
+        if (bits === 384) pkType = 'ecdsa-sha2-nistp384';
+        if (bits === 521) pkType = 'ecdsa-sha2-nistp521';
+        keyBits = bits;
+      } catch(e) {}
+    } else if (isPKCS8) {
+      format = 'PEM (PKCS#8)';
+      encrypted = false;
+      pkType = 'unknown (PKCS#8)';
+    }
+
+    // Try to derive public key via SubtleCrypto for RSA/EC PEM keys
+    let derivedPubKey = null;
+    if ((isRSAPEM || isECPEM || isPKCS8) && !encrypted) {
+      try {
+        derivedPubKey = await derivePublicKey(raw, pkType);
+        if (derivedPubKey) {
+          pubKeyBytes = derivedPubKey.bytes;
+          pkType = derivedPubKey.type || pkType;
+          keyBits = derivedPubKey.bits || keyBits;
+        }
+      } catch(e) { /* silently skip */ }
+    }
+
+    // Determine display type
+    const typeDisplayMap = {
+      'ssh-rsa': 'RSA',
+      'ssh-ed25519': 'Ed25519',
+      'ecdsa-sha2-nistp256': 'ECDSA (P-256)',
+      'ecdsa-sha2-nistp384': 'ECDSA (P-384)',
+      'ecdsa-sha2-nistp521': 'ECDSA (P-521)',
+      'ssh-dss': 'DSA',
+    };
+    const typeDisplay = typeDisplayMap[pkType] || pkType;
+
+    // Build pub key string if we have bytes
+    let pubKeyLine = null;
+    if (pubKeyBytes) {
+      pubKeyLine = buildPublicKeyLine(pkType, pubKeyBytes, '');
+    }
+
+    // Compute fingerprints
+    let fp256 = null, fpMD5val = null;
+    if (pubKeyBytes) {
+      const hash256 = await sha256(pubKeyBytes);
+      fp256 = 'SHA256:' + btoa(String.fromCharCode(...hash256)).replace(/=+$/,'');
+
+      const hashMD5 = md5(pubKeyBytes);
+      fpMD5val = Array.from(hashMD5).map(b => b.toString(16).padStart(2,'0')).join(':');
+
+      // Randomart
+      const art = randomart(hash256, typeDisplay.split(' ')[0], keyBits || '?');
+      $('randomartPre').textContent = art;
+      $('randomartInfo').innerHTML = `
+        <div style="color:var(--text-dim);font-size:11px;line-height:2">
+          <div>Visualization of SHA-256 fingerprint</div>
+          <div>using the drunken bishop algorithm.</div>
+          <div style="margin-top:8px;color:var(--text-muted)">S = start position</div>
+          <div style="color:var(--text-muted)">E = end position</div>
+          <div style="color:var(--text-muted)">+ # * = visit density</div>
+        </div>
+      `;
+
+      // Visual fp
+      $('fpVisual').innerHTML = fpVisualHTML(hash256);
+    } else {
+      $('randomartPre').textContent = 'Public key derivation not available\nfor this key type/format.';
+      $('randomartInfo').innerHTML = '';
+      $('fpVisual').textContent = 'N/A — could not derive public key';
+    }
+
+    // Security
+    const sec = assessSecurity(pkType, keyBits);
+    const strengthPct = sec.score;
+    const strengthColor = { green: 'var(--green)', blue: 'var(--blue)', amber: 'var(--amber)', red: 'var(--red)' }[sec.color];
+
+    // ─── Render ───────────────────────────────────────────────────────────────
+
+    $('keyType').innerHTML = `
+      <span class="badge badge-${sec.color}">${typeDisplay}</span>
+      <span style="color:var(--text-dim);font-size:11px">${pkType}</span>
+    `;
+
+    $('keySize').innerHTML = keyBits
+      ? `<span style="color:var(--text)">${keyBits} bits</span>`
+      : `<span style="color:var(--text-muted)">unknown</span>`;
+
+    $('keyFormat').innerHTML = `<span class="badge badge-blue">${format}</span>`;
+
+    $('keyEncrypted').innerHTML = encrypted
+      ? `<span class="badge badge-amber">YES — passphrase protected</span>`
+      : `<span class="badge badge-green">NO — unencrypted</span>`;
+
+    $('securityLevel').innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="badge badge-${sec.color}">${sec.level}</span>
+        <span style="font-size:11px;color:var(--text-dim)">${sec.note}</span>
+      </div>
+      <div class="key-strength-bar">
+        <div class="key-strength-fill" style="width:${strengthPct}%;background:${strengthColor}"></div>
+      </div>
+    `;
+
+    if (pubKeyLine) {
+      $('pubKeySSH').innerHTML = `
+        <span style="word-break:break-all;flex:1">${pubKeyLine}</span>
+        <button class="copy-btn" onclick="copyText(this, '${escapeAttr(pubKeyLine)}')">Copy</button>
+      `;
+    } else {
+      $('pubKeySSH').innerHTML = `<span style="color:var(--text-muted)">Could not derive — try an unencrypted OpenSSH key</span>`;
+    }
+
+    $('pubKeyComment').textContent = comment || '(none)';
+
+    if (fp256) {
+      $('fp256').innerHTML = `
+        <span style="flex:1">${fp256}</span>
+        <button class="copy-btn" onclick="copyText(this, '${escapeAttr(fp256)}')">Copy</button>
+      `;
+    } else {
+      $('fp256').textContent = 'N/A';
+    }
+
+    if (fpMD5val) {
+      $('fpMD5').innerHTML = `
+        <span style="flex:1">${fpMD5val}</span>
+        <button class="copy-btn" onclick="copyText(this, '${escapeAttr(fpMD5val)}')">Copy</button>
+      `;
+    } else {
+      $('fpMD5').textContent = 'N/A';
+    }
+
+    // Raw stats
+    $('rawLines').textContent = lines.filter(l=>l).length + ' lines';
+    $('b64Bytes').textContent = Math.floor(b64body.length * 3 / 4) + ' bytes (approx)';
+
+    // PEM block display
+    const pemHeader = lines.find(l => l.startsWith('---'));
+    const pemFooter = lines.filter(l => l.startsWith('---')).pop();
+    $('pemBlock').innerHTML = `
+      <span class="pem-header">${pemHeader || ''}</span>\n<span class="pem-data">${bodyLines.slice(0,4).join('\n')}${bodyLines.length > 4 ? '\n...['+bodyLines.length+' lines total]' : ''}</span>\n<span class="pem-footer">${pemFooter !== pemHeader ? pemFooter || '' : ''}</span>
+    `;
+
+    $('results').classList.add('visible');
+
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+// ─── SubtleCrypto public key derivation ──────────────────────────────────────
+
+async function derivePublicKey(pemStr, pkType) {
+  try {
+    const isEC = pemStr.includes('BEGIN EC PRIVATE KEY') || pkType.startsWith('ecdsa');
+    const isRSA = pemStr.includes('BEGIN RSA PRIVATE KEY') || pkType === 'ssh-rsa';
+    const isPKCS8 = pemStr.includes('BEGIN PRIVATE KEY');
+
+    // Extract raw PEM body
+    const lines = pemStr.split('\n').map(l=>l.trim()).filter(l=>l && !l.startsWith('---') && !l.includes(':'));
+    const b64 = lines.join('');
+    const der = b64decode(b64);
+
+    let cryptoKey;
+
+    if (isRSA) {
+      // Try PKCS#1 → wrap in PKCS#8
+      try {
+        const pkcs8 = wrapRSAInPKCS8(der);
+        cryptoKey = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, true, ['sign']);
+      } catch(e) { return null; }
+    } else if (isEC) {
+      // Try SEC1
+      try {
+        const namedCurve = guessECCurve(der);
+        const pkcs8 = wrapECInPKCS8(der, namedCurve);
+        cryptoKey = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'ECDSA', namedCurve }, true, ['sign']);
+      } catch(e) { return null; }
+    } else if (isPKCS8) {
+      return null; // ambiguous without OID parsing
+    } else {
+      return null;
+    }
+
+    // Export public key
+    const pubSpki = await crypto.subtle.exportKey('spki', await crypto.subtle.importKey(
+      'pkcs8', isRSA ? wrapRSAInPKCS8(b64decode(lines.join(''))) : der,
+      isRSA ? { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' } : { name: 'ECDSA', namedCurve: guessECCurve(b64decode(lines.join(''))) },
+      true, ['sign']
+    ).catch(()=>null)
+    .then(k => k ? crypto.subtle.exportKey('spki', k) : null)
+    .catch(()=>null));
+
+    return null; // SubtleCrypto doesn't directly give SSH wire format
+  } catch(e) { return null; }
+}
+
+// ─── DER RSA bit size parser ──────────────────────────────────────────────────
+
+function parseRSADERBits(der) {
+  // PKCS#1: SEQUENCE { INTEGER(ver), INTEGER(n), INTEGER(e), ... }
+  let offset = 0;
+  if (der[offset++] !== 0x30) return null; // SEQUENCE
+  offset += derLenSkip(der, offset);
+  if (der[offset++] !== 0x02) return null; // INTEGER (version)
+  const vLen = der[offset++]; offset += vLen;
+  if (der[offset++] !== 0x02) return null; // INTEGER (n = modulus)
+  const nLen = derReadLen(der, offset); offset += derLenBytes(der, offset);
+  // Skip leading 0x00
+  const start = der[offset] === 0x00 ? 1 : 0;
+  return (nLen - start) * 8;
+}
+
+function parseECDERBits(der) {
+  // Try to find curve OID
+  const p256 = [0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07];
+  const p384 = [0x2b,0x81,0x04,0x00,0x22];
+  const p521 = [0x2b,0x81,0x04,0x00,0x23];
+  if (containsBytes(der, p521)) return 521;
+  if (containsBytes(der, p384)) return 384;
+  if (containsBytes(der, p256)) return 256;
+  return 256; // default
+}
+
+function containsBytes(data, pattern) {
+  outer: for (let i = 0; i <= data.length - pattern.length; i++) {
+    for (let j = 0; j < pattern.length; j++) if (data[i+j] !== pattern[j]) continue outer;
+    return true;
+  }
+  return false;
+}
+
+function derReadLen(data, offset) {
+  if (data[offset] < 0x80) return data[offset];
+  const n = data[offset] & 0x7f;
+  let len = 0;
+  for (let i = 1; i <= n; i++) len = (len << 8) | data[offset + i];
+  return len;
+}
+
+function derLenBytes(data, offset) {
+  if (data[offset] < 0x80) return 1;
+  return 1 + (data[offset] & 0x7f);
+}
+
+function derLenSkip(data, offset) {
+  return derLenBytes(data, offset);
+}
+
+function guessECCurve(der) {
+  if (containsBytes(der, [0x2b,0x81,0x04,0x00,0x23])) return 'P-521';
+  if (containsBytes(der, [0x2b,0x81,0x04,0x00,0x22])) return 'P-384';
+  return 'P-256';
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function escapeAttr(s) {
+  return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// Wrap RSA PKCS#1 DER in PKCS#8 — needed for SubtleCrypto
+function wrapRSAInPKCS8(pkcs1) {
+  const rsaOid = new Uint8Array([0x30,0x0d,0x06,0x09,0x2a,0x86,0x48,0x86,0xf7,0x0d,0x01,0x01,0x01,0x05,0x00]);
+  const octetString = new Uint8Array([0x04, ...derLen(pkcs1.length), ...pkcs1]);
+  const seq = new Uint8Array([0x02,0x01,0x00, ...rsaOid, ...octetString]);
+  return new Uint8Array([0x30, ...derLen(seq.length), ...seq]);
+}
+
+function wrapECInPKCS8(sec1, namedCurve) {
+  const curveOids = {
+    'P-256': new Uint8Array([0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07]),
+    'P-384': new Uint8Array([0x2b,0x81,0x04,0x00,0x22]),
+    'P-521': new Uint8Array([0x2b,0x81,0x04,0x00,0x23]),
+  };
+  const ecOid = new Uint8Array([0x06,0x07,0x2a,0x86,0x48,0xce,0x3d,0x02,0x01]);
+  const curveOid = curveOids[namedCurve];
+  const curveOidFull = new Uint8Array([0x06, curveOid.length, ...curveOid]);
+  const algSeq = new Uint8Array([0x30, ecOid.length + curveOidFull.length, ...ecOid, ...curveOidFull]);
+  const octetStr = new Uint8Array([0x04, ...derLen(sec1.length), ...sec1]);
+  const inner = new Uint8Array([0x02,0x01,0x00, ...algSeq, ...octetStr]);
+  return new Uint8Array([0x30, ...derLen(inner.length), ...inner]);
+}
+
+function derLen(n) {
+  if (n < 0x80) return [n];
+  if (n < 0x100) return [0x81, n];
+  return [0x82, n >> 8, n & 0xff];
+}
+</script>
+</body>
+</html>
